@@ -1,7 +1,6 @@
 package main
 
 import (
-	_ "gitlab.com/gomidi/midi/v2/drivers/midicat" // autoregisters driver
 	"log"
 	"main.go/core"
 	"os"

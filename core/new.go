@@ -2,7 +2,8 @@ package core
 
 func New() *PVF {
 	a := new(PVF)
-
+	a.AccompanyingInstruments = []int{-2, -1} //todo 乐器编号列表为什么这么写我也不知道
+	a.AccompanyingChannels = []int{0, 0}      //todo 频道编号列表为什么这么写我也不知道
 	return a
 }
 

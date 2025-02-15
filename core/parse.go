@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"fmt"
+	_ "gitlab.com/gomidi/midi/v2/drivers/midicat" // autoregisters driver
 	"gitlab.com/gomidi/midi/v2/gm"
 	"gitlab.com/gomidi/midi/v2/smf"
 	"log"
@@ -27,7 +28,7 @@ func (p *PVF) Parse(file []byte) {
 		var channel, program uint8
 		var gm_name string
 
-		for _, ev := range track {
+		for key, ev := range track {
 			absTicks += uint64(ev.Delta)
 			msg := ev.Message
 
@@ -36,42 +37,35 @@ func (p *PVF) Parse(file []byte) {
 				continue
 			}
 
+			//这个库的写法有点怪，是传参数指针赋值，所以判断用空值调用一次，子函数里在调用一次来获取值
 			switch {
 			case msg.GetMetaTempo(nil): //获取BPM
-				p.Tempos = []struct { // Tempos 歌曲中的速度变化。
-					Bpm   int `json:"bpm"`   // Bpm 每分钟的拍数。
-					Ticks int `json:"ticks"` // Ticks 此速度开始的 tick 位置。
-					Time  int `json:"time"`  // Time 此速度开始的时间 (通常是秒数)。
-				}{{Bpm: 0, Ticks: 0, Time: 0}}
-				_, err = fmt.Sscanf(ev.Message.String(), "MetaTempo bpm: %d.00", &p.Tempos[0].Bpm)
-				//fmt.Println(p.Tempos)
+				p.parseMetaTempo(ev, msg)
 			case msg.GetChannel(nil): //获取钢琴音轨
-				//fmt.Println(len(p.SupportingTracks))
-				var Midi int
-				var Velocity float64
-				_, err = fmt.Sscanf(ev.Message.String(), "NoteOn channel: 0 key: %d velocity: %d", &Midi, &Velocity)
-				p.SupportingTracks[no-1].MyInstrument = -5
-				p.SupportingTracks[no-1].TheirInstrument = 0
-				p.SupportingTracks[no-1].Notes = append(p.SupportingTracks[no-1].Notes, struct {
-					Midi     int     `json:"midi"`
-					Time     float64 `json:"time"`
-					Velocity float64 `json:"velocity"`
-					Duration float64 `json:"duration"`
-				}{Midi: Midi, Time: 0, Velocity: Velocity / 255, Duration: float64(ev.Delta / uint32(p.Resolution))})
-				fmt.Println(ev.Message)
-				//fmt.Printf("track %v %s %s @%v %s\n", no, trackname, gm_name, absTicks, ev.Message)
-			case msg.IsMeta():
-				fmt.Println(123, no, ev.Message)
-			case msg.GetMetaTrackName(&trackname):
-				trackname = decodeTrackName(trackname) // 自动检测并解码 解码音轨名称 (假设为 Shift-JIS)
-			case msg.GetMetaInstrument(&trackname):
-				trackname = decodeTrackName(trackname) // 自动检测并解码 同样解码乐器名称
+				p.parseChannel(ev, no, absTicks, trackname, gm_name)
+			case msg.GetMetaKeySig(new(uint8), new(uint8), new(bool), new(bool)): //todo只判断了C大调的写法
+				p.parseMetaKeySig(ev, msg)
+			case msg.GetMetaTimeSig(new(uint8), new(uint8), new(uint8), new(uint8)):
+				p.parseMetaTimeSig(ev, absTicks, msg, key)
+			case msg.GetMetaTrackName(nil):
+				msg.GetMetaTrackName(&trackname)
+				fmt.Printf("钢琴TrackName: %v\n", decodeTrackName(trackname)) // 自动检测并解码 解码音轨名称 (假设为 Shift-JIS)
+			case msg.GetMetaInstrument(nil):
+				fmt.Printf("钢琴Instrument: %v\n", trackname) // 自动检测并解码 同样解码乐器名称
+			case msg.GetMetaCopyright(nil):
+				fmt.Printf("钢琴Copyright: %v\n", ev.Message)
+			case msg.GetSysEx(new([]byte)):
+				fmt.Printf("也许无关紧要的系统信息 %v\n", ev.Message)
 			case msg.GetProgramChange(&channel, &program):
 				gm_name = fmt.Sprintf("(%v)", gm.Instr(program).String())
+			case msg.IsMeta():
+				fmt.Printf("元信息track %v %s %s @%v %s\n", no, trackname, gm_name, absTicks, ev.Message)
 			default:
-				//fmt.Println(ev.Message)
-				fmt.Printf("track %v %s %s @%v %s\n", no, trackname, gm_name, absTicks, ev.Message)
+				fmt.Printf("其他信息track %v %s %s @%v %s\n", no, trackname, gm_name, absTicks, ev.Message)
 			}
 		}
+		//fmt.Scanln()
 	}
+
+	p.ParseEnd()
 }
