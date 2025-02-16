@@ -7,7 +7,7 @@ import (
 )
 
 func main() { // we write a SMF file into a buffer and read it back
-	file, err := os.ReadFile("Mitsuha's Theme.mid")
+	file, err := os.ReadFile("assets/Mitsuha's Theme.mid")
 	if err != nil {
 		log.Fatal(err)
 	}
