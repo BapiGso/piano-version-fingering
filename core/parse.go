@@ -7,6 +7,7 @@ import (
 	"gitlab.com/gomidi/midi/v2/gm"
 	"gitlab.com/gomidi/midi/v2/smf"
 	"log"
+	"math"
 )
 
 func (p *PVF) Parse(file []byte) {
@@ -18,7 +19,7 @@ func (p *PVF) Parse(file []byte) {
 	}
 	_, err = fmt.Sscanf(s.TimeFormat.String(), "%d MetricTicks", &p.Resolution)
 	fmt.Printf("got %v tracks\n", s.NumTracks())
-
+	println(len(s.Tracks[1]))
 	for no, track := range s.Tracks {
 
 		// it might be a good idea to go from delta ticks to absolute ticks.
@@ -60,15 +61,16 @@ func (p *PVF) Parse(file []byte) {
 			case msg.GetSysEx(new([]byte)):
 				fmt.Printf("也许无关紧要的系统信息 %v\n", ev.Message)
 			case msg.GetProgramChange(&channel, &program):
-				gm_name = fmt.Sprintf("(%v)", gm.Instr(program).String())
+				gm_name = gm.Instr(program).String()
 			case msg.IsMeta():
 				fmt.Printf("元信息track %v %s %s @%v %s\n", no, trackname, gm_name, absTicks, ev.Message)
 			default:
 				fmt.Printf("其他信息track %v %s %s @%v %s\n", no, trackname, gm_name, absTicks, ev.Message)
 			}
 		}
+		p.SongLength = int(math.Max(float64(p.SongLength), float64(int(absTicks)/p.Resolution)))
 		//fmt.Scanln()
 	}
-
+	p.parseTrackV2()
 	p.ParseEnd()
 }

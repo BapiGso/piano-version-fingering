@@ -13,4 +13,5 @@ func main() { // we write a SMF file into a buffer and read it back
 	}
 	m := core.New()
 	m.Parse(file)
+
 }
