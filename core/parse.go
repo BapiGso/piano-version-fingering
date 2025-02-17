@@ -47,6 +47,9 @@ func (p *PVF) Parse(file []byte) {
 				p.parseMetaKeySig(ev, msg)
 			case msg.GetMetaTimeSig(new(uint8), new(uint8), new(uint8), new(uint8)):
 				p.parseMetaTimeSig(ev, absTicks, msg, key)
+				if ev.Delta != 0 || absTicks == 0 {
+					p.parseMetaMeasures(ev, absTicks, msg, key)
+				}
 			case msg.GetMetaTrackName(nil):
 				msg.GetMetaTrackName(&trackname)
 				fmt.Printf("钢琴TrackName: %v\n", decodeTrackName(trackname)) // 自动检测并解码 解码音轨名称 (假设为 Shift-JIS)
