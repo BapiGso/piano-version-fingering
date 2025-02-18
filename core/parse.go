@@ -72,5 +72,5 @@ func (p *PVF) Parse(file []byte) {
 		//fmt.Scanln()
 	}
 	p.parseTrackV2()
-	p.ParseEnd()
+	p.parseOriginal()
 }
