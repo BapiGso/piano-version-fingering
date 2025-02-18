@@ -17,7 +17,7 @@ In main.go, import your MIDI file and run file, ```err := os.ReadFile("assets/40
 
 The console will eventually print an output similar to this: ```{"Right":[{"ts":[4,4],"notes":[{"n":"D7","f":0},{"n":"E7","f":0},{"n":"C7","f":0}.......```
 
-Send this output to an LLM and ask how to play it, assigning the suggested fingerings to the f field (likely representing the finger number). Save the LLM's output as JSON to ```assets/input.json```.
+Send this output to an LLM and ask how to play it, assigning the suggested fingerings to the f field (where 1-5 represent the fingers from thumb to pinky). Save the LLM's output as JSON to ```assets/input.json```.
 
 Run this program again, and it will output ```output.json``` containing the fingerings. This JSON can then be imported into PianoVision for playback.
 
